@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ห้องของ Title | 3D Portfolio</title>
+<meta name="description" content="ห้อง 3D ของ Title นักศึกษา ICT สาขา DST มหาวิทยาลัยมหิดล ลองเปิดลิ้นชักดูโปรเจกต์กัน">
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--blue:#1ea0f0;--blue-d:#0b6fb8;--red:#e8382f;--yellow:#ffd21f;--ink:#1d2b3a;--paper:#fffdf6;--muted:#5d6b7a}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;font-family:'Mali',sans-serif;color:var(--ink);background:#cfeaff}
+  canvas#scene{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+  #intro{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,#3db5ff,#0a6fc2);transition:opacity .8s,visibility .8s}
+  #intro.hide{opacity:0;visibility:hidden}
+  .intro-card{text-align:center;color:#fff;padding:30px;max-width:540px}
+  .pocket{width:150px;height:75px;margin:0 auto 22px;background:#fff;border:4px solid var(--ink);border-top:none;border-radius:0 0 80px 80px;box-shadow:0 8px 0 rgba(0,0,0,.15)}
+  .intro-card h1{font-size:clamp(2rem,6vw,3.4rem);line-height:1.2;margin:6px 0 14px;text-shadow:3px 3px 0 var(--ink)}
+  .intro-card h1 span{color:var(--yellow)}
+  .intro-card p{opacity:.95;line-height:1.7}
+  #enterBtn{margin-top:26px;font-family:inherit;font-size:1.15rem;font-weight:700;padding:14px 34px;border-radius:999px;background:var(--yellow);color:var(--ink);border:4px solid var(--ink);box-shadow:5px 5px 0 var(--ink);cursor:pointer;transition:.15s}
+  #enterBtn:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--ink)}
+  .hud-top{position:fixed;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center;z-index:5;pointer-events:none}
+  .brand{pointer-events:auto;background:var(--paper);border:3px solid var(--ink);border-radius:999px;padding:8px 18px;font-weight:700;box-shadow:4px 4px 0 var(--ink);display:flex;align-items:center;gap:10px}
+  .bell{display:inline-block;width:18px;height:18px;border-radius:50%;background:var(--yellow);border:2px solid var(--ink)}
+  .hud-btns{display:flex;gap:10px;pointer-events:auto}
+  .round-btn{width:46px;height:46px;border-radius:50%;border:3px solid var(--ink);background:var(--paper);font-size:1.2rem;cursor:pointer;box-shadow:3px 3px 0 var(--ink);transition:.15s}
+  .round-btn:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)}
+  .dock{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:5;background:var(--paper);border:3px solid var(--ink);border-radius:999px;padding:6px;box-shadow:4px 4px 0 var(--ink);max-width:calc(100% - 24px);overflow-x:auto;scrollbar-width:none}
+  .dock button{border:none;background:transparent;font-family:inherit;font-size:.88rem;padding:8px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;font-weight:600;color:var(--ink);transition:.15s}
+  .dock button:hover,.dock button.active{background:var(--blue);color:#fff}
+  .hint{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);z-index:4;background:rgba(29,43,58,.85);color:#fff;padding:8px 18px;border-radius:999px;font-size:.85rem;white-space:nowrap;transition:opacity .6s}
+  .hint.hide{opacity:0}
+  #tooltip{position:fixed;pointer-events:none;z-index:6;background:var(--ink);color:#fff;padding:6px 12px;border-radius:10px;font-size:.85rem;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;white-space:nowrap}
+  #tooltip.show{opacity:1;transform:none}
+  #toast{position:fixed;top:80px;left:50%;transform:translate(-50%,-20px);z-index:15;background:var(--yellow);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:10px 20px;border-radius:14px;font-weight:600;opacity:0;transition:.35s;pointer-events:none;text-align:center}
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+  #panel{position:fixed;top:0;right:0;height:100%;width:min(440px,100%);z-index:8;background:var(--paper);border-left:4px solid var(--ink);transform:translateX(105%);transition:transform .55s cubic-bezier(.2,.9,.2,1);display:flex;flex-direction:column}
+  #panel.open{transform:none}
+  .panel-head{background:var(--blue);color:#fff;padding:22px 60px 18px 24px;border-bottom:4px solid var(--ink);position:relative}
+  .panel-head::after{content:'';position:absolute;left:0;right:0;bottom:-16px;height:12px;background:var(--red);border-bottom:3px solid var(--ink)}
+  .panel-head .bell{position:absolute;left:50%;bottom:-34px;transform:translateX(-50%);width:32px;height:32px;border:3px solid var(--ink);z-index:2}
+  .panel-head small{letter-spacing:3px;opacity:.85;font-weight:600}
+  .panel-head h2{font-size:1.6rem;margin-top:2px}
+  .close{position:absolute;top:16px;right:16px;width:38px;height:38px;border-radius:50%;border:3px solid var(--ink);background:#fff;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+  .panel-body{padding:46px 24px 30px;overflow-y:auto;flex:1;line-height:1.7}
+  .panel-body h3{font-size:1.25rem}
+  .panel-body h4{margin:18px 0 8px;color:var(--blue-d)}
+  .panel-body p{margin-bottom:12px}
+  .muted{color:var(--muted);font-size:.92rem}
+  .profile{display:flex;gap:16px;align-items:center;margin-bottom:16px}
+  .avatar{width:96px;height:96px;overflow:hidden;position:relative;border-radius:50%;background:var(--blue);border:3px solid var(--ink);display:grid;place-items:center;font-size:2.2rem;flex-shrink:0}
+  .avatar img{position:absolute;width:160%;max-width:none;height:auto;left:-30%;top:-5%;image-rendering:pixelated}
+  .links a{overflow-wrap:anywhere;min-width:0}
+  .profile>div:last-child{min-width:0}
+  .facts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:16px 0}
+  .facts div{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:10px;text-align:center;box-shadow:3px 3px 0 var(--ink)}
+  .facts b{display:block;font-size:1.5rem;color:var(--red)}
+  .facts span{font-size:.8rem}
+  .skill{margin-bottom:12px}
+  .skill .row{display:flex;justify-content:space-between;font-weight:600;font-size:.92rem}
+  .bar{height:12px;background:#e7eef5;border:2px solid var(--ink);border-radius:999px;overflow:hidden;margin-top:4px}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),#5fd0ff);transition:width 1.2s cubic-bezier(.2,.9,.2,1)}
+  .tl-item{position:relative;padding-left:26px;margin-bottom:18px;border-left:3px dashed var(--blue)}
+  .tl-item::before{content:'';position:absolute;left:-10px;top:4px;width:16px;height:16px;border-radius:50%;background:var(--yellow);border:3px solid var(--ink)}
+  .year{font-weight:700;color:var(--red);font-size:.9rem}
+  .card{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:14px 16px;box-shadow:4px 4px 0 var(--ink);margin-top:6px}
+  .card h4{margin:0 0 4px;color:var(--ink)}
+  .card p{font-size:.92rem;color:var(--muted);margin-bottom:6px}
+  .card a{color:var(--blue-d);font-weight:700;text-decoration:none;font-size:.9rem}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .chips span{font-size:.75rem;padding:2px 10px;border-radius:999px;background:#e3f4ff;border:2px solid var(--blue);color:var(--blue-d);font-weight:600}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .gadget{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:12px;text-align:center;box-shadow:3px 3px 0 var(--ink);transition:.2s}
+  .gadget:hover{transform:translateY(-4px) rotate(-1deg)}
+  .gadget .ico{font-size:1.8rem}
+  .gadget b{display:block}
+  .gadget span{font-size:.8rem;color:var(--muted)}
+  .btn{display:inline-block;margin-top:8px;padding:10px 22px;border-radius:999px;background:var(--red);color:#fff;font-weight:700;text-decoration:none;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);font-family:inherit;font-size:1rem;cursor:pointer}
+  .links{display:flex;flex-direction:column;gap:10px;margin:12px 0 20px}
+  .links a{display:flex;gap:10px;align-items:center;padding:10px 14px;border:3px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink);text-decoration:none;font-weight:600;box-shadow:3px 3px 0 var(--ink);transition:.15s}
+  .links a:hover{background:var(--yellow)}
+  @media(max-width:600px){.brand{font-size:.85rem;padding:6px 14px}.hint{font-size:.72rem;bottom:80px}}
+</style>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+
+<div id="intro">
+  <div class="intro-card">
+    <div class="pocket"></div>
+    <p>ยินดีต้อนรับสู่</p>
+    <h1>ห้องของ <span>Title</span></h1>
+    <p>ห้องเสื่อทาทามิ 6 เสื่อ ที่ซ่อนเรื่องราวของฉันไว้ทุกมุม<br>ลองเปิดตู้นอน ลิ้นชัก และประตูดูนะ!</p>
+    <button id="enterBtn">เข้าห้องเลย 🚪</button>
+  </div>
+</div>
+
+<header class="hud-top">
+  <div class="brand"><span class="bell"></span>ห้องของ Title</div>
+  <div class="hud-btns">
+    <button class="round-btn" id="nightBtn" title="กลางวัน / กลางคืน">🌙</button>
+    <button class="round-btn" id="homeBtn" title="มุมมองเริ่มต้น">🏠</button>
+  </div>
+</header>
+
+<div class="hint" id="hint">🖱️ ลากเพื่อหมุน • ล้อเมาส์ซูมเข้าไปในห้อง • คลิกของที่มี ✨</div>
+<nav class="dock" id="dock"></nav>
+<div id="tooltip"></div>
+<div id="toast"></div>
+
+<aside id="panel">
+  <div class="panel-head">
+    <small id="panelTag"></small>
+    <h2 id="panelTitle"></h2>
+    <button class="close" id="closeBtn">✕</button>
+    <span class="bell"></span>
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+</aside>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+/* =====================================================
+   1) เนื้อหา — แก้ข้อมูลของคุณตรงนี้
+===================================================== */
+const tl = (y, t, d, tags = [], link) => `<div class="tl-item"><span class="year">${y}</span><div class="card"><h4>${t}</h4><p>${d}</p>
+  ${tags.length ? `<div class="chips">${tags.map(x => `<span>${x}</span>`).join('')}</div>` : ''}
+  ${link ? `<a href="${link}" target="_blank" rel="noopener noreferrer">ดูโปรเจกต์ →</a>` : ''}</div></div>`;
+const gad = (i, n, d) => `<div class="gadget"><div class="ico">${i}</div><b>${n}</b><span>${d}</span></div>`;
+
+const SECTIONS = {
+  about: { tag: 'ABOUT ME', title: '🛏️ เกี่ยวกับผม', html: `
+    <div class="profile"><div class="avatar"><img src="title-profile.png" alt="รูปโปรไฟล์พิกเซลของ Title ช่วงหัวถึงอก" width="1024" height="1536"></div>
+      <div><h3>Title</h3><p class="muted" style="margin:0">นักศึกษา</p></div></div>
+    <p>สวัสดีครับ อันนี้ลองทำจาก Claude Opus 5.5 โครงการ AI Pass จากรัฐบาล<br>อยากมีเว็บเป็นห้องของตัวเอง เลยลองทำดู จิ้มของในห้องเล่นได้เลย</p>
+    <div class="facts"><div><b>ม.1</b><span>สนใจเทคโนโลยีมาตั้งแต่ตอนนั้น</span></div>
+      <div><b>อยากรวย</b><span>เรื่องสนุก ๆ ไม่มีอะ</span></div></div>
+    <p class="muted">💡 ลองเปิดลิ้นชักให้ครบ มีของซ่อนอยู่</p>` },
+  skills: { tag: 'SKILLS', title: '📚 สกิลประมาณนี้', html: `
+    <p>เขียนเองยังไม่คล่องนะ ส่วนใหญ่เป็นคนคิด คอยคุม AI อีกที ฟีล Project Manager คนนึงอะ</p>
+    <h4>ภาษาที่เคยเรียน / เคยลอง</h4>
+    <div class="chips"><span>Python</span><span>Java</span><span>R</span><span>HTML</span><span>CSS</span><span>JavaScript</span></div>
+    <p class="muted">ยังต้องเปิดดู ยังต้องให้ AI ช่วย ค่อย ๆ ฝึกไป</p>
+    <h4>คุมโปรเจกต์กับ AI</h4>
+    <div class="grid">${gad('💡', 'คิดว่าจะทำอะไร', 'มีไอเดียแล้วค่อยไล่ทำ')}${gad('🤖', 'คุยกับ AI', 'บอกโจทย์ คอยดู คอยปรับ')}</div>
+    <h4>ลองใช้เองก่อน</h4>
+    <div class="grid">${gad('🧪', 'ลองกด ลองพัง', 'ติดตรงไหนก็เอากลับไปแก้')}${gad('🔧', 'ปรับไปเรื่อย', 'จนกว่าจะได้แบบที่อยากใช้')}</div>` },
+  projects: { tag: 'TIME MACHINE', title: '⏳ โปรเจกต์ที่ลองทำ', html: `
+    <p class="muted">ผมคิดโจทย์ คุม AI แล้วก็ลองใช้เอง ประมาณนี้</p>
+    ${tl('2026', '⚡ WattWise', 'ลองจัดเครื่องใช้ไฟฟ้าในบ้าน แล้วดูว่าค่าไฟจะประมาณเท่าไหร่', ['TypeScript', 'React', 'Vite', 'Cloudflare D1'], 'https://github.com/Title5656/WattWise')}
+    ${tl('2026', '🌱 Study Garden', 'เว็บไว้อ่านเตรียมสอบ มีสรุป แฟลชการ์ด แล้วก็ Quiz', ['HTML', 'CSS', 'JavaScript'], 'https://github.com/Title5656/study-garden')}
+    ${tl('2026', '🍣 Sushi Count', 'กินไปกี่จานแล้ว กดนับไว้ เดี๋ยวมันคิดเงินให้', ['HTML', 'CSS', 'JavaScript'], 'https://github.com/Title5656/Sushi-Count-')}` },
+  experience: { tag: 'RESUME', title: '📄 ประสบการณ์ทำงาน', html: `
+    <div class="card"><h4>ยังเรียนอยู่</h4><p>ยังไม่มีงานทำเลยจ้า ตอนนี้เรียน ป.ตรีอยู่ ทำโปรเจกต์ไปก่อน</p></div>` },
+  awards: { tag: 'AWARDS', title: '🏅 รางวัลและใบรับรอง', html: `
+    <div class="card"><h4>ยังไม่มีคร้าบบบ</h4><p>ช่องนี้ว่างไว้ก่อน ไว้มีแล้วค่อยมาใส่</p></div>` },
+  tools: { tag: 'GADGETS', title: '📦 อุปกรณ์วิเศษ', html: `
+    <p class="muted">ทีมงานมีผมกับ AI นี่แหละ</p>
+    <div class="grid">
+      ${gad('🤖', 'ChatGPT', 'ช่วยคิด ช่วยเขียน คุยกันยาว')}${gad('🧠', 'Claude', 'ห้องนี้ก็เริ่มจากตรงนี้')}
+      ${gad('🐙', 'GitHub', 'เก็บโปรเจกต์ไว้ตรงนี้')}${gad('🚀', 'GitHub Pages', 'เอาเว็บขึ้นให้เพื่อนกดเล่น')}
+      ${gad('🐍', 'Python', 'ค่อย ๆ ลอง ค่อย ๆ เขียน')}${gad('🌐', 'Browser DevTools', 'เปิดดูว่าเว็บเป็นอะไร')}
+    </div>` },
+  education: { tag: 'EDUCATION', title: '🎒 การศึกษา', html: `
+    ${tl('กำลังศึกษา · ปริญญาตรี', 'ICT · สาขา DST', 'มหาวิทยาลัยมหิดล (Mahidol University) · GPA 2.8')}
+    <p class="muted">ยังเรียนอยู่คร้าบ ค่อย ๆ ไป</p>` },
+  hobbies: { tag: 'HOBBIES', title: '🍩 ว่าง ๆ ทำไร', html: `
+    <div class="grid">
+      ${gad('🏐', 'วอลเลย์', 'ว่างก็ตี')}${gad('🏸', 'แบต', 'อันนี้ก็ตีเหมือนกัน')}
+      ${gad('💻', 'เขียนโค้ด', 'หรือคุม AI เขียนอีกที')}${gad('🍳', 'ทำอาหาร', 'ตอนนี้เก่งละ')}
+    </div>
+    <h4>Fun fact</h4><p>ทำอาหารเป็นเพราะช่วงโควิด แม่ซื้อมาแต่วัตถุดิบมาตุน เลยต้องทำกินเองมั่ว ๆ จนตอนนี้เก่งละ</p>` },
+  goals: { tag: 'DREAMS', title: '🪟 ความฝันและเป้าหมาย', html: `
+    <p>มองออกไปนอกหน้าต่าง แล้วคิดไว้ว่า...</p>
+    <p>1. รวย<br>2. ซื้อบ้านใหญ่ ๆ อยู่กับเพื่อนในกลุ่ม<br>3. กลับไปอ่านข้อ 1–2</p>` },
+  contact: { tag: 'ANYWHERE DOOR', title: '🚪 คุยกันได้', html: `
+    <p>ทักมาตามนี้ได้เลย</p>
+    <div class="links">
+      <a href="mailto:withwasprasiththiephethy@gmail.com">✉️ withwasprasiththiephethy@gmail.com</a>
+      <a href="https://github.com/Title5656" target="_blank" rel="noopener noreferrer">🐙 GitHub · Title5656</a>
+      <a href="https://www.instagram.com/witawat_title/" target="_blank" rel="noopener noreferrer">📸 IG · witawat_title</a>
+    </div>` },
+};
+
+/* =====================================================
+   2) ฉาก / กล้อง / แสง
+===================================================== */
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+const DAY_BG = 0xcfeaff, NIGHT_BG = 0x0d1330;
+scene.background = new THREE.Color(DAY_BG);
+
+const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.05, 100);
+camera.position.set(-10, 9, 12);
+let shift = 0, shiftT = 0;                       // เลื่อนภาพหลบ panel
+const applyView = () => camera.setViewOffset(innerWidth, innerHeight, shift, 0, innerWidth, innerHeight);
+applyView();
+
+const controls = new OrbitControls(camera, canvas);
+controls.target.set(0.2, 0.8, -0.2);
+controls.enableDamping = true;
+controls.enablePan = false;
+controls.minDistance = 0.4;
+controls.maxDistance = 11;
+controls.maxPolarAngle = Math.PI / 2 - 0.03;
+controls.enabled = false;
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0xd9cfae, 1.5);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff1d6, 2.2);
+sun.position.set(2, 7, 3);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 1, far: 20 });
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02;
+scene.add(sun);
+
+/* ---------- Helpers ---------- */
+const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.8, ...o });
+const add = (m, x, y, z, p) => { m.position.set(x, y, z); p.add(m); return m; };
+const box  = (w, h, d, m, x = 0, y = 0, z = 0, p = scene) => add(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m), x, y, z, p);
+const rbox = (w, h, d, m, x = 0, y = 0, z = 0, p = scene, r = .02) => add(new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 3, r), m), x, y, z, p);
+const cyl  = (rt, rb, h, m, x = 0, y = 0, z = 0, p = scene, s = 24) => add(new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s), m), x, y, z, p);
+const sph  = (r, m, x = 0, y = 0, z = 0, p = scene) => add(new THREE.Mesh(new THREE.SphereGeometry(r, 20, 14), m), x, y, z, p);
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+
+/* ---------- Textures ---------- */
+const tatamiTex = canvasTex(512, 256, (g, w, h) => {
+  g.fillStyle = '#c3c98d'; g.fillRect(0, 0, w, h);
+  for (let x = 0; x < w; x += 3) { g.fillStyle = `rgba(90,100,40,${.06 + Math.random() * .1})`; g.fillRect(x, 0, 1, h); }
+  g.fillStyle = '#2f4b2f'; g.fillRect(0, 0, w, 14); g.fillRect(0, h - 14, w, 14);
+});
+const fusumaTex = canvasTex(256, 512, (g, w, h) => {
+  g.fillStyle = '#f6f3ec'; g.fillRect(0, 0, w, h);
+  const s = h * .58; g.fillStyle = '#4f7fc6'; g.fillRect(0, s, w, h - s);
+  g.strokeStyle = '#fff'; g.lineWidth = 7;
+  [[62, s + 50], [194, s + 50], [128, s + 115], [62, s + 180], [194, s + 180]]
+    .forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 30, 0, Math.PI * 2); g.stroke(); });
+  g.strokeStyle = '#2a221c'; g.lineWidth = 14; g.strokeRect(7, 7, w - 14, h - 14);
+});
+const ceilTex = canvasTex(512, 512, (g, w, h) => {
+  for (let x = 0; x < w; x += 32) {
+    g.fillStyle = `hsl(33,48%,${64 + Math.random() * 8}%)`; g.fillRect(x, 0, 32, h);
+    g.strokeStyle = 'rgba(140,95,50,.25)';
+    for (let k = 0; k < 3; k++) { g.beginPath(); const ox = x + 6 + Math.random() * 20;
+      for (let y = 0; y <= h; y += 16) g.lineTo(ox + Math.sin(y / 40 + k) * 3, y); g.stroke(); }
+    g.fillStyle = 'rgba(110,70,35,.6)'; g.fillRect(x, 0, 2, h);
+  }
+});
+const calTex = canvasTex(128, 192, (g, w, h) => {
+  g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#555'; g.fillRect(0, 0, w, 6);
+  g.fillStyle = '#d9d2f0'; g.fillRect(10, 14, 108, 68);
+  g.fillStyle = '#1d2b3a'; g.font = 'bold 22px sans-serif'; g.fillText('4', 58, 108);
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 7; c++) { g.fillStyle = c === 0 ? '#e8382f' : '#3b6fd8'; g.fillRect(14 + c * 15, 120 + r * 13, 6, 6); }
+});
+function outsideTex(night) {
+  return canvasTex(512, 280, (g, w, h) => {
+    const gr = g.createLinearGradient(0, 0, 0, h);
+    if (night) { gr.addColorStop(0, '#0a1035'); gr.addColorStop(1, '#2a3570'); }
+    else { gr.addColorStop(0, '#5bb8ff'); gr.addColorStop(1, '#d8f1ff'); }
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    if (night) {
+      g.fillStyle = '#fff'; for (let i = 0; i < 90; i++) g.fillRect(Math.random() * w, Math.random() * h * .5, 1.5, 1.5);
+      g.fillStyle = '#fff6c2'; g.beginPath(); g.arc(430, 50, 22, 0, 7); g.fill();
+      g.fillStyle = '#0f1640'; g.beginPath(); g.arc(441, 43, 20, 0, 7); g.fill();
+    } else {
+      g.fillStyle = '#fff';
+      const cloud = (x, y, s) => [[0, 0, 1], [.8, .1, .8], [-.8, .15, .75], [.35, -.45, .7]]
+        .forEach(([dx, dy, r]) => { g.beginPath(); g.arc(x + dx * s, y + dy * s, r * s, 0, 7); g.fill(); });
+      cloud(110, 55, 24); cloud(330, 40, 18); cloud(470, 80, 14);
+    }
+    g.fillStyle = night ? '#16203f' : '#5f9e55';
+    g.beginPath(); g.arc(250, 175, 45, 0, 7); g.arc(285, 160, 38, 0, 7); g.fill();
+    [[0, 150, 130, '#ece4d3', '#5a6b80'], [140, 170, 110, '#f3e7cf', '#8a4b3a'],
+     [300, 145, 120, '#e7ecef', '#4a5a6a'], [430, 165, 100, '#efe0c8', '#6a7d4f']].forEach(([x, y, hw, wall, roof]) => {
+      g.fillStyle = night ? '#1b2350' : wall; g.fillRect(x + 10, y, hw - 20, h - y);
+      g.fillStyle = night ? '#111735' : roof;
+      g.beginPath(); g.moveTo(x - 4, y + 4); g.lineTo(x + hw / 2, y - 36); g.lineTo(x + hw + 4, y + 4); g.fill();
+      g.fillStyle = night ? (Math.random() > .3 ? '#ffd36b' : '#2a3366') : '#9cc3dc';
+      g.fillRect(x + 25, y + 20, 22, 18);
+      g.fillStyle = night ? '#ffd36b' : '#9cc3dc'; g.fillRect(x + hw - 47, y + 20, 22, 18);
+    });
+    g.fillStyle = night ? '#0b0f26' : '#77746e';
+    g.fillRect(372, 20, 8, h); g.fillRect(356, 40, 40, 5); g.fillRect(360, 60, 32, 4);
+    g.strokeStyle = night ? 'rgba(0,0,0,.7)' : 'rgba(40,40,40,.6)'; g.lineWidth = 1.5;
+    [42, 48, 62].forEach(y => { g.beginPath(); g.moveTo(0, y + 20); g.quadraticCurveTo(190, y + 45, 376, y); g.quadraticCurveTo(450, y + 18, w, y + 8); g.stroke(); });
+    g.fillStyle = night ? '#262c50' : '#bdb9b0'; g.fillRect(0, h - 42, w, 42);
+    g.strokeStyle = night ? '#1a1f3d' : '#a29e95'; g.lineWidth = 2;
+    for (let y = h - 42; y < h; y += 14) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+    for (let x = 0; x < w; x += 40) for (let r = 0; r < 3; r++) { const ox = x + (r % 2) * 20; g.beginPath(); g.moveTo(ox, h - 42 + r * 14); g.lineTo(ox, h - 28 + r * 14); g.stroke(); }
+  });
+}
+const skyDay = outsideTex(false), skyNight = outsideTex(true);
+const spiralTex = canvasTex(512, 512, (g, w, h) => {
+  const cx = w / 2, cy = h / 2, rg = g.createRadialGradient(cx, cy, 10, cx, cy, w / 2);
+  rg.addColorStop(0, '#fff6a8'); rg.addColorStop(.35, '#b06cff'); rg.addColorStop(1, '#2a0f5c');
+  g.fillStyle = rg; g.fillRect(0, 0, w, h); g.lineWidth = 6;
+  for (let k = 0; k < 6; k++) {
+    g.strokeStyle = k % 2 ? 'rgba(255,255,255,.55)' : 'rgba(80,220,255,.6)'; g.beginPath();
+    for (let a = 0; a < Math.PI * 6; a += .05) { const r = a * 12; g.lineTo(cx + Math.cos(a + k * Math.PI / 3) * r, cy + Math.sin(a + k * Math.PI / 3) * r); }
+    g.stroke();
+  }
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * Math.PI * 2, x = cx + Math.cos(a) * 160, y = cy + Math.sin(a) * 160;
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, 18, 0, 7); g.fill();
+    g.strokeStyle = '#333'; g.lineWidth = 3; g.stroke();
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - 12); g.moveTo(x, y); g.lineTo(x + 9, y); g.stroke();
+  }
+});
+const portalTex = canvasTex(256, 512, (g, w, h) => {
+  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#5ec8ff'); gr.addColorStop(.6, '#dff6ff');
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#ffe066'; g.beginPath(); g.arc(190, 90, 34, 0, 7); g.fill();
+  g.fillStyle = '#7ed957'; g.beginPath(); g.ellipse(80, h, 220, 170, 0, 0, 7); g.fill();
+  g.fillStyle = '#5cbf3b'; g.beginPath(); g.ellipse(240, h + 20, 180, 130, 0, 0, 7); g.fill();
+  for (let i = 0; i < 25; i++) { g.fillStyle = ['#ff6fae', '#fff', '#ffd21f'][i % 3]; g.beginPath(); g.arc(Math.random() * w, h - Math.random() * 110, 5, 0, 7); g.fill(); }
+  g.fillStyle = '#1d2b3a'; g.font = 'bold 34px sans-serif'; g.textAlign = 'center'; g.fillText("Let's talk!", w / 2, 220);
+});
+const paperTex = canvasTex(128, 160, (g, w, h) => {
+  g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#1e6fb8'; g.font = 'bold 20px sans-serif'; g.fillText('RESUME', 18, 30);
+  g.fillStyle = '#c9d3dd'; for (let y = 48; y < h - 10; y += 14) g.fillRect(18, y, 70 + Math.random() * 30, 5);
+});
+const starTex = canvasTex(64, 64, g => {
+  const rg = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  rg.addColorStop(0, 'rgba(255,240,150,1)'); rg.addColorStop(.3, 'rgba(255,210,31,.8)'); rg.addColorStop(1, 'rgba(255,210,31,0)');
+  g.fillStyle = rg; g.fillRect(0, 0, 64, 64); g.fillStyle = '#fff';
+  g.beginPath(); g.moveTo(32, 2); g.lineTo(37, 27); g.lineTo(62, 32); g.lineTo(37, 37); g.lineTo(32, 62); g.lineTo(27, 37); g.lineTo(2, 32); g.lineTo(27, 27); g.closePath(); g.fill();
+});
+
+/* ---------- Materials ---------- */
+const wallMat   = mat(0xf3ead6, { roughness: .95 });
+const pillarMat = mat(0x7a4b2a, { roughness: .6 });
+const woodLight = mat(0xd8b583);
+const deskMat   = mat(0xf0deb0, { roughness: .6 }), deskEdge = mat(0xd9c08e, { roughness: .6 }), innerMat = mat(0xf3dfb8);
+const whiteMat  = mat(0xffffff), handleMat = mat(0x9a8a70, { metalness: .5, roughness: .4 });
+
+/* =====================================================
+   3) ห้อง 6 เสื่อ (3.6 × 2.7 ม.)
+===================================================== */
+const W = 3.6, D = 2.7, H = 2.4, NAGE = 1.85;
+const roots = {};
+const reg = (o, id) => { o.userData.id = id; (roots[id] ||= []).push(o); };
+
+// พื้นเสื่อทาทามิ 6 ผืน
+box(W + .2, .04, D + .2, mat(0x5a4a30), 0, -.02, 0);
+const tatamiMat = mat(0xffffff, { map: tatamiTex, roughness: .9 });
+[[-.9, -.9, 0], [.9, -.9, 0], [-1.35, .45, 1], [0, 0, 0], [0, .9, 0], [1.35, .45, 1]].forEach(([x, z, v]) => {
+  const t = box(1.785, .02, .885, tatamiMat, x, .01, z); if (v) t.rotation.y = Math.PI / 2;
+});
+
+// ผนัง: ผนังที่บังกล้องจะซ่อนตัวเองอัตโนมัติ
+const units = [];
+function unit(pos, rotY, normal) {
+  const g = new THREE.Group(); g.position.set(...pos); g.rotation.y = rotY; scene.add(g);
+  const u = { g, p: new THREE.Vector3(...pos), n: new THREE.Vector3(...normal), extra: [] };
+  units.push(u); return u;
+}
+const back  = unit([0, 0, -D / 2], 0, [0, 0, 1]);
+const front = unit([0, 0, D / 2], Math.PI, [0, 0, -1]);
+const left  = unit([-W / 2, 0, 0], Math.PI / 2, [1, 0, 0]);
+const right = unit([W / 2, 0, 0], -Math.PI / 2, [-1, 0, 0]);
+const ceil  = unit([0, H, 0], 0, [0, -1, 0]);
+
+function buildWall(u, len, hole, pillars = []) {
+  const g = u.g, L = len / 2;
+  const pane = (x0, x1, y0, y1) => {
+    if (x1 - x0 < 1e-3 || y1 - y0 < 1e-3) return;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, y1 - y0), wallMat);
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, 0); g.add(m);
+  };
+  if (!hole) pane(-L, L, 0, H);
+  else { const [a, b, c, d] = hole; pane(-L, a, 0, H); pane(c, L, 0, H); pane(a, c, d, H); pane(a, c, 0, b); }
+  const t = (w, h, dd, x, y) => box(w, h, dd, pillarMat, x, y, dd / 2, g);
+  [-L + .05, L - .05, ...pillars].forEach(x => t(.1, H, .05, x, H / 2));   // เสา
+  t(len, .1, .06, 0, NAGE);                                                // คานนาเงชิ
+  t(len, .05, .04, 0, H - .025);                                           // บัวเพดาน
+  if (hole && hole[1] === 0) { t(hole[0] + L, .06, .02, (-L + hole[0]) / 2, .03); t(L - hole[2], .06, .02, (hole[2] + L) / 2, .03); }
+  else t(len, .06, .02, 0, .03);                                           // บัวพื้น
+}
+buildWall(back, W, [-.5, .9, 1.0, 1.72], [-.62, 1.12]);
+buildWall(front, W, [-1.65, 0, -.9, 1.8], [-1.7, -.85]);
+buildWall(left, D, null, [.9]);
+buildWall(right, D, [-1.15, 0, .65, 1.8], [-1.2, .7]);
+
+// ประตูบานเลื่อนออกไปบันได
+box(.75, 1.78, .03, mat(0xd6ad78), -1.275, .9, -.02, front.g);
+box(.02, .1, .012, pillarMat, -.97, .9, 0, front.g);
+
+// ปฏิทิน
+const cal = new THREE.Mesh(new THREE.PlaneGeometry(.26, .39), mat(0xffffff, { map: calTex }));
+add(cal, 1.03, 1.35, .006, right.g);
+
+// เพดานไม้ + โคมไฟเพดาน
+const ceilMesh = new THREE.Mesh(new THREE.PlaneGeometry(W, D), mat(0xffffff, { map: ceilTex }));
+ceilMesh.rotation.x = Math.PI / 2; ceil.g.add(ceilMesh);
+const pendant = new THREE.Group(); pendant.position.set(0, 0, .1); ceil.g.add(pendant);
+cyl(.006, .006, .3, mat(0x333333), 0, -.15, 0, pendant);
+const shade = cyl(.26, .3, .07, mat(0xffffff, { emissive: 0xfff2d0, emissiveIntensity: .05 }), 0, -.34, 0, pendant, 40);
+shade.userData.glow = true;
+cyl(.3, .3, .015, mat(0xd8b583), 0, -.31, 0, pendant, 40);
+cyl(.002, .002, .25, mat(0x333333), .12, -.5, 0, pendant);
+sph(.015, mat(0xe8382f), .12, -.63, 0, pendant);
+reg(pendant, 'ceiling');
+const roomLight = new THREE.PointLight(0xfff4dd, 0, 9, 2); roomLight.position.set(0, H - .5, .1); scene.add(roomLight);
+
+// หน้าต่าง
+const win = new THREE.Group(); win.position.set(.25, 1.31, 0); back.g.add(win);
+const winGlass = new THREE.Mesh(new THREE.PlaneGeometry(1.5, .82), new THREE.MeshBasicMaterial({ map: skyDay }));
+winGlass.position.z = -.01; win.add(winGlass);
+const alu = mat(0xc3ccd4, { metalness: .4, roughness: .4 });
+box(1.5, .05, .07, alu, 0, .385, .02, win); box(1.5, .05, .07, alu, 0, -.385, .02, win);
+box(.05, .82, .07, alu, -.725, 0, .02, win); box(.05, .82, .07, alu, .725, 0, .02, win);
+box(.04, .78, .05, alu, 0, 0, .03, win); box(1.45, .025, .03, alu, 0, .12, .015, win);
+box(1.62, .03, .12, woodLight, 0, -.425, .06, win);
+reg(win, 'goals');
+
+// ผ้าม่านสีเขียว
+cyl(.012, .012, 1.95, mat(0x6f8fb0, { metalness: .5 }), .25, 1.77, .1, back.g).rotation.z = Math.PI / 2;
+function curtain(w, h, folds) {
+  const geo = new THREE.PlaneGeometry(w, h, folds * 8, 1), p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) p.setZ(i, Math.sin((p.getX(i) / w + .5) * folds * Math.PI * 2) * .022);
+  geo.computeVertexNormals();
+  return new THREE.Mesh(geo, mat(0x86c99a, { side: THREE.DoubleSide, roughness: .95 }));
+}
+add(curtain(.55, .95, 6), -.44, 1.29, .1, back.g);
+add(curtain(.36, .95, 4), 1.0, 1.29, .1, back.g);
+
+/* ---------- ตู้นอน (โอชิอิเระ) ฝังในผนังขวา ---------- */
+const closet = new THREE.Group(); closet.position.set(W / 2, 0, -.25); scene.add(closet); right.extra.push(closet);
+const noCast = [];
+const inMat = mat(0xeee6d4);
+noCast.push(
+  box(.02, 1.8, 1.8, inMat, .8, .9, 0, closet), box(.8, .02, 1.8, inMat, .4, 1.8, 0, closet),
+  box(.8, 1.8, .02, inMat, .4, .9, -.9, closet), box(.8, 1.8, .02, inMat, .4, .9, .9, closet));
+box(.8, .02, 1.8, inMat, .4, .01, 0, closet);
+box(.78, .04, 1.8, woodLight, .41, .8, 0, closet);
+box(.04, .07, 1.8, pillarMat, .02, .8, 0, closet);
+box(.1, .03, 1.8, pillarMat, .05, .015, 0, closet);
+// ฟูกของโดราเอมอน
+rbox(.7, .09, 1.7, whiteMat, .42, .865, 0, closet, .03);
+rbox(.72, .05, 1.05, mat(0x8fd0f5), .42, .92, .3, closet, .02);
+rbox(.38, .1, .24, mat(0xfafafa), .42, .955, -.66, closet, .04);
+// ของชั้นล่าง
+box(.45, .3, .4, mat(0xc9a06a), .5, .16, -.62, closet);
+box(.42, .26, .38, mat(0xf3b6c4), .5, .44, -.62, closet);
+box(.5, .22, .42, mat(0x8fc7e8), .45, .12, -.05, closet);
+box(.5, .22, .42, mat(0x8fc7e8), .45, .35, -.05, closet);
+box(.45, .25, .4, mat(0xe6d36a), .5, .14, .55, closet);
+// บานฟุสุมะ
+const fusumaMat = mat(0xffffff, { map: fusumaTex, roughness: .9 });
+const panelA = box(.03, 1.78, .92, fusumaMat, .035, .9, -.44, closet);
+const panelB = box(.03, 1.78, .92, fusumaMat, .07, .9, .44, closet);
+const hikite = (p, z) => { const h = cyl(.032, .032, .01, mat(0x222222), -.018, .05, z, p); h.rotation.z = Math.PI / 2; };
+hikite(panelA, -.36); hikite(panelB, .36);
+reg(closet, 'closet');
+
+/* ---------- โต๊ะเรียน ---------- */
+const desk = new THREE.Group(); desk.position.set(.25, 0, -1.05); scene.add(desk);
+box(1.1, .03, .6, deskMat, 0, .735, 0, desk);
+box(.03, .72, .56, deskEdge, -.535, .36, -.01, desk);
+box(.42, .705, .56, deskEdge, .34, .3525, -.01, desk);
+box(.66, .1, .56, deskEdge, -.19, .67, -.01, desk);
+box(1.04, .5, .02, deskEdge, 0, .45, -.28, desk);
+
+function makeDrawer(w, h, d) {
+  const g = new THREE.Group();
+  box(w, h, .02, deskMat, 0, 0, .01, g);
+  box(w - .04, .01, d, innerMat, 0, -h / 2 + .015, -d / 2, g);
+  box(.01, h - .03, d, innerMat, -w / 2 + .025, -.005, -d / 2, g);
+  box(.01, h - .03, d, innerMat, w / 2 - .025, -.005, -d / 2, g);
+  box(w - .04, h - .03, .01, innerMat, 0, -.005, -d + .005, g);
+  box(.1, .014, .018, handleMat, 0, h > .1 ? h / 2 - .04 : 0, .03, g);
+  return g;
+}
+// ลิ้นชักไทม์แมชชีน
+const tmDrawer = makeDrawer(.6, .085, .48); tmDrawer.position.set(-.19, .67, .27); desk.add(tmDrawer);
+const tmFloor = new THREE.Group(); tmFloor.position.set(0, -.029, -.24); tmFloor.rotation.x = -Math.PI / 2; tmDrawer.add(tmFloor);
+tmFloor.add(new THREE.Mesh(new THREE.PlaneGeometry(.56, .44), new THREE.MeshBasicMaterial({ color: 0x2a0f5c })));
+const tmSwirl = new THREE.Mesh(new THREE.CircleGeometry(.17, 64), new THREE.MeshBasicMaterial({ map: spiralTex }));
+tmSwirl.position.z = .001; tmSwirl.scale.x = 1.25; tmFloor.add(tmSwirl);
+const tmLight = new THREE.PointLight(0xb06cff, 0, 1.2, 2); tmLight.position.set(0, .15, -.25); tmDrawer.add(tmLight);
+reg(tmDrawer, 'projects');
+
+// ลิ้นชักข้าง 3 ช่อง
+const d1 = makeDrawer(.4, .205, .45); d1.position.set(.34, .5775, .27); desk.add(d1);
+const d2 = makeDrawer(.4, .205, .45); d2.position.set(.34, .3625, .27); desk.add(d2);
+const d3 = makeDrawer(.4, .205, .45); d3.position.set(.34, .1475, .27); desk.add(d3);
+reg(d1, 'experience'); reg(d2, 'awards'); reg(d3, 'secret');
+box(.21, .005, .28, mat(0xffffff, { map: paperTex }), 0, -.08, -.2, d1).rotation.y = .08;
+cyl(.04, .04, .008, mat(0xffc93c, { metalness: .8, roughness: .25 }), -.08, -.08, -.14, d2);
+box(.025, .004, .12, mat(0xe8382f), -.08, -.082, -.25, d2);
+box(.14, .004, .18, whiteMat, .08, -.08, -.22, d2);
+const copter = new THREE.Group(); copter.position.set(0, -.07, -.2); d3.add(copter);
+cyl(.035, .035, .02, mat(0xffd21f), 0, 0, 0, copter);
+cyl(.006, .006, .07, mat(0xe0a020), 0, .045, 0, copter);
+const copterBlade = new THREE.Group(); copterBlade.position.y = .08; copter.add(copterBlade);
+box(.2, .006, .025, mat(0xffd21f), 0, 0, 0, copterBlade);
+
+// โคมไฟโต๊ะสีฟ้า
+const lamp = new THREE.Group(); lamp.position.set(-.4, .75, -.12); desk.add(lamp);
+const lampMat = mat(0x2f86d6, { roughness: .4 });
+cyl(.07, .08, .02, lampMat, 0, .01, 0, lamp);
+box(.018, .36, .018, lampMat, 0, .19, 0, lamp);
+box(.32, .018, .018, lampMat, .15, .36, 0, lamp).rotation.z = -.12;
+box(.26, .025, .07, lampMat, .33, .34, 0, lamp);
+const bulb = sph(.018, mat(0xfff3c4, { emissive: 0xffd36b, emissiveIntensity: .1 }), .33, .322, 0, lamp);
+bulb.userData.glow = true;
+const lampLight = new THREE.PointLight(0xffd59a, 0, 2.5, 2); lampLight.position.set(.33, .29, 0); lamp.add(lampLight);
+reg(lamp, 'lamp');
+
+// ของบนโต๊ะ
+[0xa8d8b9, 0xf7c873, 0x8fc1e3, 0xf4a6b8, 0xc9b6e4, 0x9ad0c2, 0xf2d06b].forEach((c, i) => {
+  const hh = .2 + (i % 3) * .03; box(.028, hh, .17, mat(c), .14 + i * .032, .75 + hh / 2, -.2, desk);
+});
+cyl(.035, .035, .09, mat(0xf5b8c4), -.02, .795, -.2, desk);
+[[-.03, .03], [0, -.01], [.01, .02]].forEach(([x, z], i) => cyl(.004, .004, .14, mat([0xe8382f, 0x1ea0f0, 0xffd21f][i]), -.02 + x, .85, -.2 + z, desk));
+rbox(.06, .05, .05, mat(0x2a7fc9), .5, .775, -.16, desk, .01);
+
+// เก้าอี้ล้อเลื่อนสีเขียว
+const chair = new THREE.Group(); chair.position.set(.22, 0, -.42); chair.rotation.y = .15; scene.add(chair);
+const baseMat = mat(0x6f8fb0, { metalness: .3, roughness: .5 }), seatMat = mat(0x2fa37a, { roughness: .6 });
+for (let i = 0; i < 5; i++) {
+  const a = i / 5 * Math.PI * 2;
+  const leg = box(.26, .025, .035, baseMat, Math.cos(a) * .13, .06, Math.sin(a) * .13, chair); leg.rotation.y = -a;
+  sph(.025, mat(0x333333), Math.cos(a) * .25, .025, Math.sin(a) * .25, chair);
+}
+cyl(.025, .025, .34, baseMat, 0, .24, 0, chair);
+rbox(.42, .06, .4, seatMat, 0, .44, 0, chair, .025);
+box(.03, .26, .03, baseMat, 0, .58, .2, chair);
+rbox(.38, .24, .04, seatMat, 0, .76, .21, chair, .018);
+
+/* ---------- ตู้เตี้ยสีส้ม + กระเป๋านักเรียน ---------- */
+const cab = new THREE.Group(); cab.position.set(-1.05, 0, -1.16); scene.add(cab);
+const cabMat = mat(0xf5a86b), cabDoor = mat(0xf7c08e);
+box(.76, .03, .4, cabMat, 0, .605, 0, cab);
+box(.03, .6, .38, cabMat, -.355, .3, 0, cab); box(.03, .6, .38, cabMat, .355, .3, 0, cab);
+box(.7, .04, .38, cabMat, 0, .02, 0, cab); box(.7, .6, .02, cabMat, 0, .3, -.18, cab);
+box(.7, .02, .36, cabMat, 0, .32, 0, cab);
+box(.34, .27, .02, cabDoor, -.175, .175, .18, cab); box(.34, .27, .02, cabDoor, .175, .175, .18, cab);
+sph(.012, handleMat, -.03, .2, .195, cab); sph(.012, handleMat, .03, .2, .195, cab);
+[0xf7c873, 0x8fc1e3, 0xa8d8b9, 0xf4a6b8].forEach((c, i) => box(.04, .22, .22, mat(c), .1 + i * .045, .44, 0, cab));
+box(.22, .1, .2, mat(0xe9a0b4), -.18, .38, 0, cab);
+rbox(.14, .16, .1, mat(0x7ec8d6), -.22, .7, 0, cab, .02);
+cyl(.035, .035, .16, mat(0xd9574b), -.06, .7, 0, cab);
+rbox(.16, .07, .12, mat(0x5bbfa8), .14, .655, 0, cab, .015);
+const randoseru = new THREE.Group(); randoseru.position.set(-.2, .14, .2); cab.add(randoseru);
+rbox(.24, .28, .13, mat(0x3e5f8a), 0, .15, .065, randoseru, .035);
+rbox(.245, .2, .02, mat(0x2f4c73), 0, .2, .135, randoseru, .008);
+box(.04, .03, .01, mat(0xd4af37, { metalness: .7 }), 0, .11, .148, randoseru);
+reg(randoseru, 'education');
+
+/* ---------- ชั้นหนังสือสีเหลือง ---------- */
+const shelf = new THREE.Group(); shelf.position.set(-W / 2 + .16, 0, -.15); shelf.rotation.y = Math.PI / 2; scene.add(shelf);
+const shMat = mat(0xf2c14e, { roughness: .6 });
+box(.03, 1.8, .32, shMat, -.435, .9, 0, shelf); box(.03, 1.8, .32, shMat, .435, .9, 0, shelf);
+box(.9, .03, .32, shMat, 0, 1.785, 0, shelf); box(.87, 1.8, .02, shMat, 0, .9, -.15, shelf);
+[.02, .46, .82, 1.16, 1.48].forEach(y => box(.87, .025, .3, shMat, 0, y, 0, shelf));
+box(.42, .42, .02, mat(0xf4c542), -.215, .24, .16, shelf); box(.42, .42, .02, mat(0xf4c542), .215, .24, .16, shelf);
+sph(.018, mat(0xb8862b), -.05, .26, .175, shelf); sph(.018, mat(0xb8862b), .05, .26, .175, shelf);
+box(.82, .15, .28, mat(0x7ed0e6), 0, .555, .01, shelf); box(.82, .15, .28, mat(0x7ed0e6), 0, .725, .01, shelf);
+box(.6, .08, .01, whiteMat, 0, .555, .155, shelf); box(.6, .08, .01, whiteMat, 0, .725, .155, shelf);
+const bookCols = [0x6cc08b, 0xf7c873, 0x8fc1e3, 0xf4a6b8, 0x9ad0c2, 0xf28c6b, 0xc9b6e4, 0xffffff, 0x4a90d9];
+[.835, 1.175, 1.495].forEach(sy => {
+  let x = -.41;
+  while (x < .36) {
+    const bw = .03 + Math.random() * .035, bh = .2 + Math.random() * .07;
+    if (x + bw > .41) break;
+    box(bw, bh, .24, mat(bookCols[Math.random() * bookCols.length | 0]), x + bw / 2, sy + bh / 2, .02, shelf);
+    x += bw + .004;
+  }
+});
+rbox(.7, .14, .28, mat(0xe9d8b4), 0, 1.87, 0, shelf, .05);
+rbox(.6, .1, .26, mat(0xc9a77a), 0, 1.99, 0, shelf, .04);
+reg(shelf, 'skills');
+
+/* ---------- โต๊ะญี่ปุ่น + โดรายากิ + เบาะ ---------- */
+const table = new THREE.Group(); table.position.set(.35, 0, .45); scene.add(table);
+cyl(.38, .38, .03, mat(0xb8743f, { roughness: .5 }), 0, .33, 0, table, 48);
+for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4; box(.04, .31, .04, mat(0x8a5a32), Math.cos(a) * .25, .155, Math.sin(a) * .25, table); }
+cyl(.15, .13, .015, whiteMat, 0, .355, 0, table, 32);
+function dorayaki(x, y, z, r = 0) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.z = r; table.add(g);
+  const bun = mat(0xa0612a, { roughness: .6 });
+  [-.012, .012].forEach(dy => { const b = sph(.06, bun, 0, dy, 0, g); b.scale.set(1, .32, 1); });
+  cyl(.054, .054, .01, mat(0x4a2018), 0, 0, 0, g);
+}
+dorayaki(-.05, .375, .03); dorayaki(.06, .375, -.03); dorayaki(0, .41, 0, .12);
+cyl(.032, .026, .055, mat(0x4e8f6a), .22, .372, .12, table);
+reg(table, 'hobbies');
+const zabuton = rbox(.5, .07, .5, mat(0x9fd3f2), .95, .045, .95, scene, .03); zabuton.rotation.y = .3;
+
+/* ---------- ประตูไปที่ไหนก็ได้ ---------- */
+const doorG = new THREE.Group(); doorG.position.set(-1.1, 0, .92); doorG.rotation.y = .35; scene.add(doorG);
+const pinkDark = mat(0xe0508f, { roughness: .5 });
+box(.07, 1.97, .1, pinkDark, -.435, .985, 0, doorG); box(.07, 1.97, .1, pinkDark, .435, .985, 0, doorG);
+box(.94, .07, .1, pinkDark, 0, 2.005, 0, doorG); box(.98, .04, .25, pinkDark, 0, .02, 0, doorG);
+add(new THREE.Mesh(new THREE.PlaneGeometry(.8, 1.92), new THREE.MeshBasicMaterial({ map: portalTex, side: THREE.DoubleSide })), 0, 1.0, -.01, doorG);
+const doorPivot = new THREE.Group(); doorPivot.position.set(-.4, 0, .03); doorG.add(doorPivot);
+box(.8, 1.92, .04, mat(0xff7eb6, { roughness: .5 }), .4, 1.0, 0, doorPivot);
+sph(.035, mat(0xffd21f, { metalness: .6, roughness: .3 }), .7, .95, .04, doorPivot);
+reg(doorG, 'contact');
+
+/* ---------- ของประกอบฉาก ---------- */
+cyl(.11, .1, .3, mat(0xa8e6cf), .95, .15, -1.12);                      // ถังขยะ
+const basket = new THREE.Group(); basket.position.set(1.48, 0, -1.1); scene.add(basket);
+const bMat = mat(0x6fd3a0);
+box(.36, .02, .28, bMat, 0, .01, 0, basket);
+box(.36, .22, .015, bMat, 0, .12, .135, basket); box(.36, .22, .015, bMat, 0, .12, -.135, basket);
+box(.015, .22, .28, bMat, .175, .12, 0, basket); box(.015, .22, .28, bMat, -.175, .12, 0, basket);
+cyl(.012, .022, .62, woodLight, .05, .34, 0, basket).rotation.z = .25;
+const glove = sph(.07, mat(0x9b5a2e), -.08, .22, .02, basket); glove.scale.set(1, .7, 1);
+
+// เงา
+scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+units.forEach(u => u.g.traverse(o => { if (o.isMesh) o.castShadow = false; }));
+noCast.forEach(m => m.castShadow = false);
+// แยก material ของที่คลิกได้ (ใช้ทำไฮไลต์)
+Object.values(roots).flat().forEach(r => r.traverse(o => { if (o.isMesh) o.material = o.material.clone(); }));
+
+// ประกาย ✨
+const stars = [];
+function star(p, u) {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: starTex, transparent: true, depthWrite: false }));
+  s.position.set(...p); s.userData.y = p[1]; s.raycast = () => {};
+  scene.add(s); stars.push(s); if (u) u.extra.push(s);
+}
+star([1.6, 1.5, -.7], right); star([1.6, .6, -.7], right); star([.3, .95, -.65]);
+star([-1.4, 2.15, -.15]); star([-1.25, .72, -.82]); star([-1.1, 2.2, .92]);
+star([.35, .62, .45]); star([.25, 1.62, -1.22], back);
+
+/* =====================================================
+   4) Animation
+===================================================== */
+const anims = [];
+const anim = apply => { const a = { p: 0, target: 0, apply }; anims.push(a); return a; };
+const tmAnim     = anim(p => { tmDrawer.position.z = .27 + p * .36; tmLight.intensity = p * 1.5; });
+const d1Anim     = anim(p => d1.position.z = .27 + p * .3);
+const d2Anim     = anim(p => d2.position.z = .27 + p * .3);
+const d3Anim     = anim(p => d3.position.z = .27 + p * .3);
+const closetAnim = anim(p => panelA.position.z = -.44 + p * .86);
+const doorAnim   = anim(p => doorPivot.rotation.y = p * 1.15);
+
+/* =====================================================
+   5) ของที่คลิกได้ + มุมกล้อง [ตำแหน่งกล้อง, จุดที่มอง]
+===================================================== */
+const ITEMS = {
+  about:      { label: '🛏️ ตู้นอนชั้นบน — About Me',         anim: closetAnim, view: [[.15, 1.45, .15], [2.2, 1.0, -.7]] },
+  tools:      { label: '📦 ตู้ชั้นล่าง — อุปกรณ์วิเศษ',          anim: closetAnim, view: [[.2, .95, .35], [2.2, .35, -.7]] },
+  projects:   { label: '⏳ ลิ้นชักไทม์แมชชีน — Projects',      anim: tmAnim,     view: [[.06, 1.35, .3], [.06, .6, -.65]] },
+  experience: { label: '📄 ลิ้นชักช่องบน — Resume',          anim: d1Anim,     view: [[.75, 1.25, .25], [.59, .5, -.6]] },
+  awards:     { label: '🏅 ลิ้นชักช่องกลาง — รางวัล',          anim: d2Anim,     view: [[.8, 1.05, .25], [.59, .3, -.6]] },
+  secret:     { label: '❓ ลิ้นชักช่องล่าง — มีอะไรอยู่นะ?',     anim: d3Anim },
+  skills:     { label: '📚 ชั้นหนังสือ — Skills',                                view: [[.4, 1.35, .35], [-1.6, 1.05, -.2]] },
+  education:  { label: '🎒 กระเป๋านักเรียน — การศึกษา',                         view: [[-.6, .95, .2], [-1.15, .4, -1.0]] },
+  goals:      { label: '🪟 หน้าต่าง — ความฝัน',                                  view: [[.25, 1.35, .6], [.25, 1.3, -1.4]] },
+  hobbies:    { label: '🍩 โต๊ะญี่ปุ่น — Hobbies',                               view: [[1.1, 1.1, 1.3], [.35, .3, .45]] },
+  contact:    { label: '🚪 ประตูไปที่ไหนก็ได้ — Contact',    anim: doorAnim,   view: [[-.56, 1.25, 2.42], [-1.1, 1.0, .92]] },
+  lamp:       { label: '💡 โคมไฟโต๊ะ — เปิด/ปิด' },
+  ceiling:    { label: '🔆 ไฟเพดาน — ดึงเชือกเปิด/ปิด' },
+};
+const DOCK = [['about', '🛏️ About'], ['skills', '📚 Skills'], ['projects', '⏳ Projects'], ['experience', '📄 Resume'],
+  ['awards', '🏅 Awards'], ['tools', '📦 Tools'], ['education', '🎒 Education'], ['hobbies', '🍩 Hobbies'],
+  ['goals', '🪟 Dreams'], ['contact', '🚪 Contact']];
+const rootKey = id => (id === 'about' || id === 'tools') ? 'closet' : id;
+
+/* =====================================================
+   6) UI / กล้อง / คลิก
+===================================================== */
+const $ = id => document.getElementById(id);
+const panel = $('panel'), panelBody = $('panelBody'), tooltip = $('tooltip'), toastEl = $('toast'), hint = $('hint'), dock = $('dock');
+
+DOCK.forEach(([id, label]) => {
+  const b = document.createElement('button'); b.textContent = label; b.dataset.id = id;
+  b.onclick = () => activate(id); dock.appendChild(b);
+});
+const updateDock = () => dock.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.id === current));
+
+let toastTimer;
+function toast(msg) {
+  toastEl.textContent = msg; toastEl.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2800);
+}
+
+let tween = null;
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+function flyTo(pos, target, dur = 1.3) {
+  tween = { fp: camera.position.clone(), tp: new THREE.Vector3(...pos), ft: controls.target.clone(), tt: new THREE.Vector3(...target), t: 0, dur };
+  controls.enabled = false;
+}
+function defaultView() {
+  const k = innerWidth / innerHeight < 1 ? 1.6 : 1;
+  return [[-4.2 * k, 4.0 * k, 5.0 * k], [.2, .8, -.2]];
+}
+
+let lampOn = false, roomOn = false;
+function setLamp(on) { lampOn = on; lampLight.intensity = on ? 1.2 : 0; bulb.material.emissiveIntensity = on ? 3 : .1; }
+function setRoom(on) { roomOn = on; roomLight.intensity = on ? 6 : 0; shade.material.emissiveIntensity = on ? 1.2 : .05; }
+
+let current = null;
+function activate(id) {
+  const it = ITEMS[id]; if (!it) return;
+  hint.classList.add('hide');
+  if (id === 'lamp') return setLamp(!lampOn);
+  if (id === 'ceiling') return setRoom(!roomOn);
+  if (id === 'secret') {
+    it.anim.target = it.anim.target ? 0 : 1;
+    if (it.anim.target) toast('รวยไม่ไหวแล้วโว๊ย');
+    return;
+  }
+  if (current === id) return closePanel();
+  if (current && ITEMS[current].anim) ITEMS[current].anim.target = 0;
+  current = id;
+  if (it.anim) it.anim.target = 1;
+  flyTo(...it.view);
+  openPanel(id);
+  updateDock();
+}
+function openPanel(id) {
+  const s = SECTIONS[id];
+  $('panelTag').textContent = s.tag; $('panelTitle').textContent = s.title;
+  panelBody.innerHTML = s.html; panelBody.scrollTop = 0;
+  panel.classList.add('open');
+  shiftT = innerWidth > 820 ? 220 : 0;
+  setTimeout(() => panelBody.querySelectorAll('.bar i').forEach(b => b.style.width = b.dataset.w), 300);
+}
+function closePanel() {
+  if (current && ITEMS[current].anim) ITEMS[current].anim.target = 0;
+  current = null; shiftT = 0;
+  panel.classList.remove('open');
+  flyTo(...defaultView());
+  updateDock();
+}
+$('closeBtn').onclick = closePanel;
+$('homeBtn').onclick = () => current ? closePanel() : flyTo(...defaultView());
+addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+// กลางวัน / กลางคืน (แก้บั๊กหน้าต่าง: อ้าง winGlass.material ตัวที่ใช้งานจริง)
+let night = false;
+$('nightBtn').onclick = () => {
+  night = !night;
+  winGlass.material.map = night ? skyNight : skyDay;
+  winGlass.material.needsUpdate = true;
+  hemi.intensity = night ? .3 : 1.5;
+  sun.intensity = night ? .15 : 2.2;
+  sun.color.set(night ? 0x8899ff : 0xfff1d6);
+  scene.background.set(night ? NIGHT_BG : DAY_BG);
+  $('nightBtn').textContent = night ? '☀️' : '🌙';
+  setRoom(night); setLamp(night);
+};
+
+// Raycast (ข้ามผนังที่ถูกซ่อน)
+const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
+const visibleDeep = o => { while (o) { if (!o.visible) return false; o = o.parent; } return true; };
+function pick(e) {
+  pointer.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(pointer, camera);
+  for (const h of raycaster.intersectObjects(scene.children, true)) {
+    if (h.object.isSprite || !visibleDeep(h.object)) continue;
+    let o = h.object;
+    while (o) {
+      if (o.userData.id) return o.userData.id === 'closet' ? (h.point.y > .82 ? 'about' : 'tools') : o.userData.id;
+      o = o.parent;
+    }
+    return null;
+  }
+  return null;
+}
+function highlight(id, on) {
+  (roots[rootKey(id)] || []).forEach(r => r.traverse(o => {
+    if (o.isMesh && o.material.emissive && !o.userData.glow) o.material.emissive.setHex(on ? 0x3a2a10 : 0);
+  }));
+}
+let hovered = null;
+canvas.addEventListener('pointermove', e => {
+  const id = pick(e);
+  if (id !== hovered) { if (hovered) highlight(hovered, false); hovered = id; if (id) highlight(id, true); }
+  canvas.style.cursor = id ? 'pointer' : 'grab';
+  if (id) {
+    tooltip.textContent = ITEMS[id].label;
+    tooltip.style.left = e.clientX + 16 + 'px'; tooltip.style.top = e.clientY + 16 + 'px';
+    tooltip.classList.add('show');
+  } else tooltip.classList.remove('show');
+});
+let down = null;
+canvas.addEventListener('pointerdown', e => down = [e.clientX, e.clientY]);
+canvas.addEventListener('pointerup', e => {
+  if (!down) return;
+  const moved = Math.hypot(e.clientX - down[0], e.clientY - down[1]); down = null;
+  if (moved < 6) { const id = pick(e); if (id) activate(id); }
+});
+
+$('enterBtn').onclick = () => {
+  $('intro').classList.add('hide');
+  flyTo(...defaultView(), 2.2);
+  setTimeout(() => hint.classList.add('hide'), 9000);
+};
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); applyView(); });
+
+/* =====================================================
+   7) Loop
+===================================================== */
+const clock = new THREE.Clock(), tmpV = new THREE.Vector3();
+function tick() {
+  const dt = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
+
+  // ซ่อนผนังที่อยู่ระหว่างกล้องกับห้อง
+  units.forEach(u => {
+    const vis = tmpV.copy(camera.position).sub(u.p).dot(u.n) > 0;
+    u.g.visible = vis; u.extra.forEach(o => o.visible = vis);
+  });
+
+  anims.forEach(a => { a.p += (a.target - a.p) * Math.min(1, dt * 6); a.apply(a.p); });
+  tmSwirl.rotation.z -= dt * 1.6;
+  copterBlade.rotation.y += dt * (1 + d3Anim.p * 25);
+  stars.forEach((s, i) => {
+    const k = .1 + Math.sin(t * 3 + i) * .025;
+    s.scale.set(k, k, k); s.position.y = s.userData.y + Math.sin(t * 2 + i) * .03;
+  });
+
+  if (Math.abs(shiftT - shift) > .5) { shift += (shiftT - shift) * Math.min(1, dt * 5); applyView(); }
+
+  if (tween) {
+    tween.t += dt / tween.dur;
+    const k = ease(Math.min(tween.t, 1));
+    camera.position.lerpVectors(tween.fp, tween.tp, k);
+    controls.target.lerpVectors(tween.ft, tween.tt, k);
+    camera.lookAt(controls.target);
+    if (tween.t >= 1) { tween = null; controls.enabled = true; }
+  } else controls.update();
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
+</body>
+</html>
